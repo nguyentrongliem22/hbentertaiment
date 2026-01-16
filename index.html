@@ -3,285 +3,492 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HB Entertainment | Sáng Tạo Vô Tận - CEO Tommy Nguyễn</title>
-    
+    <title>E-com Growth Plan Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <!-- React & ReactDOM CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
+    <!-- Dependencies for Recharts UMD -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/react-is@18.2.0/umd/react-is.production.min.js"></script>
+    <!-- Recharts CDN -->
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Lucide Icons -->
+    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000;
-            color: #fff;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line {
+            stroke: #f1f5f9;
         }
-
-        .cinematic-gradient {
-            background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0) 100%);
-        }
-
-        .gold-text {
-            background: linear-gradient(to r, #ca8a04, #facc15, #ca8a04);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #000;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #ca8a04;
-            border-radius: 10px;
+        .recharts-responsive-container {
+            min-height: 250px;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useMemo, useEffect } = React;
+        const { 
+            ResponsiveContainer, ComposedChart, Line, Bar, Area, XAxis, YAxis, 
+            CartesianGrid, Tooltip, Legend 
+        } = Recharts;
 
-        // Helper for Lucide Icons in React CDN
-        const Icon = ({ name, size = 24, className = "" }) => {
+        // --- CẤU HÌNH ---
+        const EXCHANGE_RATE = 25000;
+        const CONSTANTS = {
+            AOV: 30, // Giá trị đơn hàng trung bình (USD)
+            CR: 0.02 // Tỷ lệ chuyển đổi 2%
+        };
+
+        // --- DỮ LIỆU GỐC CẬP NHẬT (TỔNG $201,000) ---
+        const rawData = [
+            {
+                month: 'Tháng 1', event: 'New Year (1/1)', shops: 3, staffTotal: 4, staffOffline: 2, staffOutsource: 2,
+                revenueUSD: 0, milestone: 'Setup team & Quy trình',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 0 }, 
+                    { name: 'CNMED002', revUSD: 0 }, 
+                    { name: 'CNMED003', revUSD: 0 }
+                ]
+            },
+            {
+                month: 'Tháng 2', event: "Valentine's (14/2)", shops: 5, staffTotal: 9, staffOffline: 5, staffOutsource: 4,
+                revenueUSD: 5000, milestone: 'Doanh thu đầu tiên',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 1500 }, 
+                    { name: 'CNMED002', revUSD: 1500 }, 
+                    { name: 'CNMED003', revUSD: 1000 },
+                    { name: 'CNMED004', revUSD: 500 }, 
+                    { name: 'CNMED005', revUSD: 500 }
+                ]
+            },
+            {
+                month: 'Tháng 3', event: "St. Patrick's (17/3)", shops: 7, staffTotal: 14, staffOffline: 8, staffOutsource: 6,
+                revenueUSD: 15000, milestone: 'Điểm hòa vốn',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 3500 }, 
+                    { name: 'CNMED002', revUSD: 3500 }, 
+                    { name: 'CNMED003', revUSD: 3000 },
+                    { name: 'CNMED004', revUSD: 2000 }, 
+                    { name: 'CNMED005', revUSD: 2000 }, 
+                    { name: 'CNMED006', revUSD: 500 },
+                    { name: 'CNMED007', revUSD: 500 }
+                ]
+            },
+            {
+                month: 'Tháng 4', event: "Easter (Phục Sinh)", shops: 9, staffTotal: 19, staffOffline: 11, staffOutsource: 8,
+                revenueUSD: 35000, milestone: 'Tăng trưởng mạnh',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 7500 }, 
+                    { name: 'CNMED002', revUSD: 7500 }, 
+                    { name: 'CNMED003', revUSD: 6000 },
+                    { name: 'CNMED004', revUSD: 5000 }, 
+                    { name: 'CNMED005', revUSD: 4000 }, 
+                    { name: 'CNMED006', revUSD: 2000 },
+                    { name: 'CNMED007', revUSD: 1500 }, 
+                    { name: 'CNMED008', revUSD: 1000 }, 
+                    { name: 'CNMED009', revUSD: 500 }
+                ]
+            },
+            {
+                month: 'Tháng 5', event: "Mother's Day", shops: 11, staffTotal: 24, staffOffline: 14, staffOutsource: 10,
+                revenueUSD: 71000, milestone: 'Đạt đỉnh doanh thu Q2',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 15000 }, 
+                    { name: 'CNMED002', revUSD: 14000 }, 
+                    { name: 'CNMED003', revUSD: 10000 },
+                    { name: 'CNMED004', revUSD: 8000 }, 
+                    { name: 'CNMED005', revUSD: 7000 }, 
+                    { name: 'CNMED006', revUSD: 6000 },
+                    { name: 'CNMED007', revUSD: 4000 }, 
+                    { name: 'CNMED008', revUSD: 3500 }, 
+                    { name: 'CNMED009', revUSD: 1500 },
+                    { name: 'CNMED010', revUSD: 1000 }, 
+                    { name: 'CNMED011', revUSD: 1000 }
+                ]
+            },
+            {
+                month: 'Tháng 6', event: "Father's Day", shops: 13, staffTotal: 29, staffOffline: 17, staffOutsource: 12,
+                revenueUSD: 75000, milestone: 'Ổn định & Mở rộng',
+                shopDetails: [
+                    { name: 'CNMED001', revUSD: 16000 }, 
+                    { name: 'CNMED002', revUSD: 15000 }, 
+                    { name: 'CNMED003', revUSD: 11000 },
+                    { name: 'CNMED004', revUSD: 9000 }, 
+                    { name: 'CNMED005', revUSD: 8000 }, 
+                    { name: 'CNMED006', revUSD: 7000 },
+                    { name: 'CNMED007', revUSD: 4000 }, 
+                    { name: 'CNMED008', revUSD: 3000 }, 
+                    { name: 'CNMED009', revUSD: 1000 },
+                    { name: 'CNMED010', revUSD: 1000 }, 
+                    { name: 'CNMED011', revUSD: 0 }, 
+                    { name: 'CNMED012', revUSD: 0 },
+                    { name: 'CNMED013', revUSD: 0 }
+                ]
+            }
+        ];
+
+        // Lucide Icon Component
+        const Icon = ({ name, className }) => {
             useEffect(() => {
                 if (window.lucide) {
                     window.lucide.createIcons();
                 }
             }, [name]);
-            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+            return <i data-lucide={name} className={className}></i>;
         };
 
-        const App = () => {
-            const [activeTab, setActiveTab] = useState('home');
-            const [isScrolled, setIsScrolled] = useState(false);
-            const [isMenuOpen, setIsMenuOpen] = useState(false);
+        // Tooltip Row Component
+        const FinancialRow = ({ label, value, tooltip, isSubItem = true }) => (
+            <li className={`flex justify-between items-center ${isSubItem ? 'italic text-slate-400 text-[10px]' : ''}`}>
+                <div className="flex items-center gap-1.5 group relative">
+                    <span>{label}</span>
+                    <div className="cursor-help text-slate-300 hover:text-indigo-400 transition-colors">
+                        <Icon name="info" className="w-2.5 h-2.5" />
+                    </div>
+                    <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block w-48 p-2 bg-slate-800 text-white text-[9px] rounded shadow-lg z-50 normal-case font-normal leading-tight">
+                        {tooltip}
+                        <div className="absolute left-2 top-full w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-slate-800"></div>
+                    </div>
+                </div>
+                <span>{value}</span>
+            </li>
+        );
 
-            useEffect(() => {
-                const handleScroll = () => setIsScrolled(window.scrollY > 50);
-                window.addEventListener('scroll', handleScroll);
-                return () => window.removeEventListener('scroll', handleScroll);
-            }, []);
+        const MetricCard = ({ title, value, subtext, icon, color }) => (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-start space-x-3 transition hover:shadow-md">
+                <div className={`p-2.5 rounded-lg ${color} bg-opacity-10 flex-shrink-0`}>
+                    <Icon name={icon} className={`w-5 h-5 ${color.replace('bg-', 'text-')}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-slate-500 truncate uppercase tracking-wider">{title}</p>
+                    <h3 className="text-lg font-bold text-slate-800 mt-0.5 truncate">{value}</h3>
+                    <p className="text-[9px] text-slate-400 mt-0.5 truncate">{subtext}</p>
+                </div>
+            </div>
+        );
 
-            const navItems = [
-                { id: 'home', label: 'Trang chủ' },
-                { id: 'projects', label: 'Dự án Phim' },
-                { id: 'about', label: 'Về chúng tôi' },
-                { id: 'contact', label: 'Liên hệ' }
-            ];
+        const TimelineItem = ({ item, isLast, isOpen, onToggle, formatMoney }) => (
+            <div className="relative flex gap-6 pb-8 last:pb-0">
+                {!isLast && <div className="absolute top-0 left-[19px] h-full w-0.5 bg-slate-200" />}
+                <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md ring-4 ring-white">
+                    {item.month.replace('Tháng ', 'T')}
+                </div>
+                <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                    <div className="p-5 cursor-pointer flex justify-between items-start" onClick={onToggle}>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                                <h4 className="font-bold text-lg text-slate-800">{item.event}</h4>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                    {item.milestone}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                                <span className="flex items-center gap-1.5">
+                                    Quy mô: <b>{item.shops} Shops</b>
+                                    {item.newShopsCount > 0 && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-bold border border-orange-100">
+                                            +{item.newShopsCount} shop mới
+                                        </span>
+                                    )}
+                                </span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1.5">
+                                    Nhân sự: <b>{item.staffTotal}</b>
+                                    {item.newStaffCount > 0 && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold border border-blue-100">
+                                            +{item.newStaffCount} mới
+                                        </span>
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-right flex items-center gap-4">
+                            <div className="hidden sm:block text-right">
+                                <div className={`text-xs font-bold ${item.displayProfit >= 0 ? 'text-indigo-600' : 'text-orange-500'}`}>
+                                    {formatMoney(item.displayProfit)} ({item.profitMargin.toFixed(1)}%)
+                                </div>
+                                <div className="text-[9px] text-slate-400 uppercase tracking-tighter">Lợi nhuận</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-lg font-bold text-green-600">{formatMoney(item.displayRevenue)}</div>
+                                <div className="text-[9px] text-slate-400 uppercase tracking-tighter">Doanh thu</div>
+                            </div>
+                            <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                                <Icon name="chevron-down" className="w-5 h-5 text-slate-400" />
+                            </div>
+                        </div>
+                    </div>
+                    {isOpen && (
+                        <div className="bg-slate-50 border-t border-slate-100 p-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center">
+                                        <Icon name="calculator" className="w-4 h-4 mr-1.5" /> Tài chính & KPI Reach
+                                    </h5>
+                                    
+                                    <div className="p-4 bg-white rounded-lg border border-slate-200">
+                                        <ul className="text-[11px] space-y-2 text-slate-600">
+                                            <li className="flex justify-between pb-1 border-b border-slate-100">
+                                                <span>Doanh thu:</span> <b className="text-green-600">{formatMoney(item.displayRevenue)}</b>
+                                            </li>
+                                            
+                                            <FinancialRow 
+                                                label="- Fulfillment (35%):" 
+                                                value={formatMoney(item.costBreakdown.fulfillment)}
+                                                tooltip="Chi phí xử lý đơn hàng: 35% doanh thu"
+                                            />
+                                            <FinancialRow 
+                                                label="- Phí sàn (17%):" 
+                                                value={formatMoney(item.costBreakdown.platform)}
+                                                tooltip="Phí sàn thương mại: 17% doanh thu"
+                                            />
+                                            <FinancialRow 
+                                                label="- Marketing (10%):" 
+                                                value={formatMoney(item.costBreakdown.ads)}
+                                                tooltip="Ngân sách chạy quảng cáo: 10% doanh thu"
+                                            />
+                                            <FinancialRow 
+                                                label="- Nhân sự Inhouse:" 
+                                                value={formatMoney(item.costBreakdown.inhouse)}
+                                                tooltip={`Lương Inhouse: ${item.staffOffline} người x 9.000.000đ`}
+                                            />
+                                            <FinancialRow 
+                                                label="- Nhân sự Outsource:" 
+                                                value={formatMoney(item.costBreakdown.outsource)}
+                                                tooltip={`Lương Outsource: ${item.staffOutsource} người x 5.000.000đ`}
+                                            />
+                                            <FinancialRow 
+                                                label="- Phí văn phòng:" 
+                                                value={formatMoney(item.costBreakdown.office)}
+                                                tooltip="Phí mặt bằng: 9.000.000đ/tháng"
+                                            />
 
-            const movies = [
-                {
-                    id: 1,
-                    title: "BÓNG TỐI SÀI GÒN",
-                    genre: "Hành động / Hình sự",
-                    trend: "Khi ánh đèn phố thị tắt ngóm, bản chất thật sự sẽ lộ diện. Bạn đã sẵn sàng cho cuộc 'thanh trừng' lớn nhất năm 2026?",
-                    story: "Một cựu cảnh sát ngầm (Tommy Nguyễn thủ vai) bị cuốn vào vòng xoáy hận thù sau cái chết bí ẩn của đồng đội. Anh phải đối đầu với một tổ chức tội phạm xuyên quốc gia núp bóng tập đoàn giải trí lớn nhất thành phố.",
-                    quality: "Được quay hoàn toàn bằng công nghệ IMAX, những màn rượt đuổi tốc độ cao trên cầu Thủ Thiêm được dàn dựng bởi đội ngũ chuyên gia Hollywood.",
-                    imdb: "8.8/10",
-                    image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1000"
-                },
-                {
-                    id: 2,
-                    title: "KHOẢNG LẶNG CUỐI CÙNG",
-                    genre: "Tâm lý / Tình cảm",
-                    trend: "Bạn sẽ chọn ai khi người bạn yêu nhất lại là người bạn không bao giờ được phép nhớ tới?",
-                    story: "Câu chuyện về hai linh hồn lạc lối tìm thấy nhau trong một thư viện cũ giữa lòng Hà Nội, nơi mỗi trang sách đều chứa đựng một mảnh ký ức bị lãng quên.",
-                    quality: "Màu sắc phim theo phong cách cổ điển (Retro), nhạc phim được sáng tác độc quyền bởi dàn nhạc giao hưởng danh tiếng.",
-                    imdb: "8.2/10",
-                    image: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=1000"
-                }
-            ];
+                                            <li className="flex justify-between font-bold pt-1 border-t border-slate-100 text-red-500">
+                                                <span>Tổng chi phí:</span>
+                                                <span>{formatMoney(item.displayCost)}</span>
+                                            </li>
+                                            
+                                            <li className={`flex justify-between font-bold pt-2 mt-1 border-t-2 border-indigo-100 text-base ${item.displayProfit >= 0 ? 'text-indigo-600' : 'text-orange-500'}`}>
+                                                <div className="flex flex-col">
+                                                    <span>Lợi nhuận ròng:</span>
+                                                    <span className="text-[10px] font-normal opacity-70">Tỷ suất LN: {item.profitMargin.toFixed(1)}%</span>
+                                                </div>
+                                                <span>{formatMoney(item.displayProfit)}</span>
+                                            </li>
+
+                                            <li className="pt-3 mt-3 border-t border-slate-100">
+                                                <div className="flex justify-between items-center p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                                                    <div className="flex items-center gap-1.5 group relative">
+                                                        <span className="text-indigo-700 font-bold uppercase text-[9px]">KPI Reach:</span>
+                                                        <div className="cursor-help text-indigo-300">
+                                                            <Icon name="info" className="w-3 h-3" />
+                                                        </div>
+                                                        <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block w-56 p-2 bg-slate-800 text-white text-[9px] rounded shadow-lg z-50 normal-case font-normal leading-tight">
+                                                            Lượng truy cập cần có. Reach = Doanh thu / (CR x AOV). CR=2%, AOV=$30.
+                                                            <div className="absolute left-2 top-full w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-slate-800"></div>
+                                                        </div>
+                                                    </div>
+                                                    <b className="text-indigo-700 text-sm">{new Intl.NumberFormat().format(item.kpiReach)}</b>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center">
+                                        <Icon name="store" className="w-4 h-4 mr-1.5" /> Breakdown Shops
+                                    </h5>
+                                    <div className="bg-white p-3 rounded-lg border border-slate-200 max-h-[240px] overflow-y-auto space-y-3">
+                                        {item.shopDetails.map((shop, idx) => (
+                                            <div key={idx}>
+                                                <div className="flex justify-between text-[11px] mb-1">
+                                                    <span className="font-medium text-slate-700">{shop.name}</span>
+                                                    <span className="text-slate-500">{formatMoney(shop.displayRev)}</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                                    <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${item.displayRevenue > 0 ? (shop.displayRev/item.displayRevenue)*100 : 0}%` }}></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [expandedMonths, setExpandedMonths] = useState({0: true});
+            const [currency, setCurrency] = useState('USD');
+
+            const processedData = useMemo(() => {
+                return rawData.map((item, index) => {
+                    const prevStaff = index > 0 ? rawData[index - 1].staffTotal : 0;
+                    const newStaffCount = item.staffTotal - prevStaff;
+                    const prevShops = index > 0 ? rawData[index - 1].shops : 0;
+                    const newShopsCount = item.shops - prevShops;
+
+                    const revVND = item.revenueUSD * EXCHANGE_RATE;
+                    const breakdownVND = {
+                        fulfillment: revVND * 0.35,
+                        inhouse: item.staffOffline * 9000000,
+                        platform: revVND * 0.17,
+                        ads: revVND * 0.10,
+                        office: 9000000,
+                        outsource: item.staffOutsource * 5000000
+                    };
+                    const totalCostVND = Object.values(breakdownVND).reduce((a, b) => a + b, 0);
+                    const profitVND = revVND - totalCostVND;
+                    const profitMargin = revVND > 0 ? (profitVND / revVND) * 100 : 0;
+                    const kpiReach = Math.round(item.revenueUSD / (CONSTANTS.CR * CONSTANTS.AOV));
+
+                    const convert = (val) => currency === 'USD' ? val / EXCHANGE_RATE : val;
+
+                    return {
+                        ...item,
+                        newStaffCount,
+                        newShopsCount,
+                        profitMargin,
+                        kpiReach,
+                        displayRevenue: convert(revVND),
+                        displayCost: convert(totalCostVND),
+                        displayProfit: convert(profitVND),
+                        costBreakdown: {
+                            fulfillment: convert(breakdownVND.fulfillment),
+                            inhouse: convert(breakdownVND.inhouse),
+                            platform: convert(breakdownVND.platform),
+                            ads: convert(breakdownVND.ads),
+                            office: convert(breakdownVND.office),
+                            outsource: convert(breakdownVND.outsource)
+                        },
+                        shopDetails: item.shopDetails.map(s => ({
+                            ...s,
+                            displayRev: convert(s.revUSD * EXCHANGE_RATE)
+                        }))
+                    };
+                });
+            }, [currency]);
+
+            const formatMoney = (val) => {
+                const options = { style: 'currency', currency: currency, maximumFractionDigits: 0 };
+                return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'vi-VN', options).format(val);
+            };
+
+            const stats = useMemo(() => {
+                const totalRev = processedData.reduce((a, c) => a + c.displayRevenue, 0);
+                const totalProfit = processedData.reduce((a, c) => a + c.displayProfit, 0);
+                return {
+                    rev: totalRev,
+                    cost: processedData.reduce((a, c) => a + c.displayCost, 0),
+                    profit: totalProfit,
+                    margin: totalRev > 0 ? (totalProfit / totalRev) * 100 : 0,
+                    shops: processedData[processedData.length-1].shops,
+                    staff: processedData[processedData.length-1].staffTotal
+                };
+            }, [processedData]);
 
             return (
-                <div className="min-h-screen bg-black text-white selection:bg-yellow-600 selection:text-black">
-                    {/* Header */}
-                    <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-black/95 py-3 border-b border-yellow-600/20' : 'bg-transparent py-5'}`}>
-                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('home')}>
-                                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-700 rounded-lg flex items-center justify-center shadow-lg">
-                                    <span className="text-black font-black text-xl">HB</span>
+                <div className="min-h-screen pb-20">
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+                        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                                    <Icon name="trending-up" className="w-5 h-5" />
                                 </div>
-                                <span className="text-xl font-bold tracking-tighter hidden sm:block">ENTERTAINMENT</span>
+                                <div>
+                                    <h1 className="text-lg font-bold text-slate-900 leading-tight">CNMED Dashboard</h1>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Strategy 2024</p>
+                                </div>
                             </div>
-
-                            <div className="hidden md:flex items-center gap-8">
-                                {navItems.map(item => (
-                                    <button 
-                                        key={item.id} 
-                                        onClick={() => setActiveTab(item.id)}
-                                        className={`text-xs uppercase tracking-widest font-bold transition-colors hover:text-yellow-500 ${activeTab === item.id ? 'text-yellow-500' : 'text-gray-400'}`}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                                <button className="bg-yellow-600 hover:bg-yellow-500 text-black px-6 py-2 rounded-full text-xs font-black transition-transform hover:scale-105">
-                                    HỢP TÁC
-                                </button>
+                            <div className="flex items-center gap-3">
+                                <div className="bg-slate-100 p-1 rounded-lg flex text-[10px] font-bold border border-slate-200">
+                                    <button onClick={() => setCurrency('USD')} className={`px-4 py-1.5 rounded-md transition-all ${currency === 'USD' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>USD</button>
+                                    <button onClick={() => setCurrency('VND')} className={`px-4 py-1.5 rounded-md transition-all ${currency === 'VND' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>VND</button>
+                                </div>
+                                <nav className="flex bg-slate-100 p-1 rounded-lg text-xs font-medium border border-slate-200">
+                                    <button onClick={() => setActiveTab('overview')} className={`px-4 py-1.5 rounded-md transition-all ${activeTab === 'overview' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>Tổng Quan</button>
+                                    <button onClick={() => setActiveTab('details')} className={`px-4 py-1.5 rounded-md transition-all ${activeTab === 'details' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>Lộ Trình</button>
+                                </nav>
                             </div>
-
-                            <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                                <Icon name={isMenuOpen ? "x" : "menu"} />
-                            </button>
                         </div>
-                    </nav>
+                    </header>
 
-                    {/* Content Section Manager */}
-                    <main>
-                        {activeTab === 'home' && (
-                            <section className="relative h-screen flex items-center">
-                                <div className="absolute inset-0">
-                                    <img src="https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=2000" className="w-full h-full object-cover opacity-40" />
-                                    <div className="absolute inset-0 cinematic-gradient"></div>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                                </div>
-                                <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
-                                    <p className="text-yellow-500 font-bold tracking-[0.4em] mb-4 text-sm">SINCE 2026</p>
-                                    <h1 className="text-6xl md:text-8xl font-black mb-6 leading-none">
-                                        SÁNG TẠO <br /> <span className="gold-text">VÔ TẬN.</span>
-                                    </h1>
-                                    <p className="text-gray-400 max-w-xl text-lg mb-8">Dẫn đầu kỷ nguyên giải trí số với những trải nghiệm điện ảnh đẳng cấp và nội dung độc bản từ HB Entertainment.</p>
-                                    <div className="flex gap-4">
-                                        <button onClick={() => setActiveTab('projects')} className="bg-yellow-600 hover:bg-yellow-500 text-black px-8 py-4 rounded font-black flex items-center gap-2">
-                                            <Icon name="play" size={18} /> KHÁM PHÁ NGAY
-                                        </button>
-                                        <button onClick={() => setActiveTab('about')} className="bg-white/10 hover:bg-white/20 border border-white/10 px-8 py-4 rounded font-black">
-                                            VỀ CHÚNG TÔI
-                                        </button>
+                    <main className="max-w-7xl mx-auto px-4 py-8">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+                            <MetricCard title="Doanh Thu" value={formatMoney(stats.rev)} subtext="Tổng tích lũy" icon="dollar-sign" color="bg-green-500" />
+                            <MetricCard title="Chi Phí" value={formatMoney(stats.cost)} subtext="Vận hành & Nhân sự" icon="wallet" color="bg-red-500" />
+                            <MetricCard title="Lợi Nhuận" value={formatMoney(stats.profit)} subtext="Net Profit" icon="award" color="bg-indigo-600" />
+                            <MetricCard title="Tỷ Suất LN" value={`${stats.margin.toFixed(1)}%`} subtext="Biên ròng trung bình" icon="percent" color="bg-purple-500" />
+                            <MetricCard title="Quy Mô" value={`${stats.shops} Shops`} subtext="Mục tiêu Q2" icon="store" color="bg-orange-500" />
+                            <MetricCard title="Đội Ngũ" value={`${stats.staff} Mem`} subtext="Nhân sự cuối kỳ" icon="users" color="bg-blue-500" />
+                        </div>
+
+                        {activeTab === 'overview' ? (
+                            <div className="space-y-6">
+                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                                    <h2 className="text-sm font-bold text-slate-800 mb-6 uppercase tracking-wider flex items-center">
+                                        <Icon name="bar-chart-3" className="w-4 h-4 mr-2 text-indigo-500" /> Hiệu Quả Tài Chính ({currency})
+                                    </h2>
+                                    <div className="w-full h-[320px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart data={processedData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="month" tick={{fontSize: 11, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                                                <YAxis tickFormatter={v => currency === 'USD' ? `$${v/1000}k` : `${v/1e6}tr`} tick={{fontSize: 10, fill: '#64748b'}} axisLine={false} />
+                                                <Tooltip formatter={(v) => typeof v === 'number' ? formatMoney(v) : v} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)'}} />
+                                                <Legend verticalAlign="top" align="right" iconType="circle" />
+                                                <Bar dataKey="displayRevenue" name="Doanh thu" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={35} />
+                                                <Bar dataKey="displayCost" name="Chi phí" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={35} />
+                                                <Line type="monotone" dataKey="displayProfit" name="Lợi nhuận" stroke="#4f46e5" strokeWidth={3} dot={{r: 4}} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'projects' && (
-                            <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto animate-in fade-in duration-500">
-                                <h2 className="text-4xl font-black mb-12">DỰ ÁN ĐANG TRIỂN KHAI</h2>
-                                <div className="grid lg:grid-cols-2 gap-12">
-                                    {movies.map(movie => (
-                                        <div key={movie.id} className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden group hover:border-yellow-600/40 transition-all shadow-2xl">
-                                            <div className="h-72 overflow-hidden relative">
-                                                <img src={movie.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded text-yellow-500 font-bold text-xs flex items-center gap-1">
-                                                    <Icon name="star" size={12} /> {movie.imdb}
-                                                </div>
-                                            </div>
-                                            <div className="p-8">
-                                                <h3 className="text-3xl font-black mb-6">{movie.title}</h3>
-                                                <div className="space-y-4 text-sm">
-                                                    <div>
-                                                        <span className="text-yellow-600 font-bold block mb-1">HÓNG PHIM:</span>
-                                                        <p className="text-gray-300 italic">"{movie.trend}"</p>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-yellow-600 font-bold block mb-1">TÒ MÒ (STORY):</span>
-                                                        <p className="text-gray-400 line-clamp-2">{movie.story}</p>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-yellow-600 font-bold block mb-1">TRẢI NGHIỆM:</span>
-                                                        <p className="text-gray-500">{movie.quality}</p>
-                                                    </div>
-                                                </div>
-                                                <button className="w-full mt-8 bg-white text-black py-4 rounded font-black hover:bg-yellow-600 hover:text-white transition-colors uppercase tracking-widest">
-                                                    XEM TRAILER
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'about' && (
-                            <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto">
-                                <div className="grid md:grid-cols-2 gap-16 items-center">
-                                    <div className="relative">
-                                        <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=1000" className="rounded-2xl grayscale hover:grayscale-0 transition-all duration-700" />
-                                        <div className="absolute -bottom-6 -right-6 bg-yellow-600 p-6 rounded-xl shadow-2xl">
-                                            <p className="text-black font-black text-xl uppercase">Tommy Nguyễn</p>
-                                            <p className="text-black/80 font-bold text-xs">CEO & Founder HB Entertainment</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h2 className="text-5xl font-black mb-8 leading-tight">TẦM NHÌN <br/><span className="text-yellow-600">GIẢI TRÍ 2026</span></h2>
-                                        <p className="text-gray-400 text-lg leading-relaxed mb-6">
-                                            Thành lập vào năm 2026, HB Entertainment là tâm huyết của Tommy Nguyễn với khát vọng đưa điện ảnh Việt Nam vươn tầm quốc tế thông qua công nghệ và sự sáng tạo không giới hạn.
-                                        </p>
-                                        <div className="flex gap-8">
-                                            <div>
-                                                <p className="text-3xl font-black text-yellow-600">15+</p>
-                                                <p className="text-gray-500 text-xs uppercase font-bold">Dự án phim</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-3xl font-black text-yellow-600">50+</p>
-                                                <p className="text-gray-500 text-xs uppercase font-bold">Nghệ sĩ cộng tác</p>
-                                            </div>
-                                        </div>
+                                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                                    <h2 className="text-sm font-bold text-slate-800 mb-6 uppercase tracking-wider flex items-center">
+                                        <Icon name="users-round" className="w-4 h-4 mr-2 text-blue-500" /> Quy Mô Đội Ngũ & Shop
+                                    </h2>
+                                    <div className="w-full h-[280px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart data={processedData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="month" tick={{fontSize: 11, fill: '#94a3b8'}} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{fontSize: 10, fill: '#64748b'}} axisLine={false} />
+                                                <Tooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)'}} />
+                                                <Legend verticalAlign="top" align="right" iconType="circle" />
+                                                <Area type="monotone" dataKey="staffTotal" name="Tổng nhân sự" fill="#dbeafe" stroke="#3b82f6" strokeWidth={2} />
+                                                <Line type="stepAfter" dataKey="shops" name="Số lượng Shop" stroke="#f59e0b" strokeWidth={2} dot={{r: 5}} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
-                            </section>
-                        )}
-
-                        {activeTab === 'contact' && (
-                            <section className="pt-32 pb-20 px-6 max-w-4xl mx-auto">
-                                <div className="bg-zinc-900 p-12 rounded-3xl border border-white/5 shadow-2xl">
-                                    <h2 className="text-4xl font-black mb-8 text-center">LIÊN HỆ HỢP TÁC</h2>
-                                    <div className="grid md:grid-cols-2 gap-8 mb-12">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-yellow-600/10 rounded-full flex items-center justify-center border border-yellow-600/20">
-                                                <Icon name="mail" className="text-yellow-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase font-bold">Email</p>
-                                                <p className="font-bold">contact@hbent.vn</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-yellow-600/10 rounded-full flex items-center justify-center border border-yellow-600/20">
-                                                <Icon name="map-pin" className="text-yellow-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase font-bold">Địa chỉ</p>
-                                                <p className="font-bold">Landmark 81, TP.HCM</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <form className="space-y-4">
-                                        <input type="text" placeholder="Họ và tên của bạn" className="w-full bg-black/50 border border-white/10 p-4 rounded-lg focus:outline-none focus:border-yellow-600" />
-                                        <textarea placeholder="Nội dung lời nhắn" rows="4" className="w-full bg-black/50 border border-white/10 p-4 rounded-lg focus:outline-none focus:border-yellow-600"></textarea>
-                                        <button className="w-full bg-yellow-600 text-black py-4 rounded font-black uppercase tracking-widest shadow-lg hover:bg-yellow-500">Gửi yêu cầu</button>
-                                    </form>
-                                </div>
-                            </section>
+                            </div>
+                        ) : (
+                            <div className="max-w-3xl mx-auto">
+                                {processedData.map((item, i) => (
+                                    <TimelineItem 
+                                        key={i} item={item} isLast={i === processedData.length-1} 
+                                        isOpen={expandedMonths[i]} 
+                                        onToggle={() => setExpandedMonths(p => ({...p, [i]: !p[i]}))}
+                                        formatMoney={formatMoney}
+                                    />
+                                ))}
+                            </div>
                         )}
                     </main>
-
-                    {/* Footer */}
-                    <footer className="py-12 px-6 border-t border-white/5 text-center">
-                        <div className="flex justify-center items-center gap-2 mb-4">
-                            <div className="w-6 h-6 bg-yellow-600 rounded flex items-center justify-center">
-                                <span className="text-black font-black text-[10px]">HB</span>
-                            </div>
-                            <span className="font-bold text-sm tracking-widest">HB ENTERTAINMENT</span>
-                        </div>
-                        <p className="text-gray-500 text-xs">© 2026 HB Entertainment. Designed for CEO Tommy Nguyễn.</p>
-                    </footer>
                 </div>
             );
-        };
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
